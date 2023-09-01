@@ -1,5 +1,6 @@
 #![allow(non_camel_case_types)]
-pub enum TokenType {
+
+pub enum Lexeme {
     LET,
     MUT,
     FN,
@@ -89,4 +90,32 @@ pub enum TokenType {
     GE_OP,
 }
 
-pub struct Lexer {}
+pub struct Lexer {
+    file_content: String,
+}
+
+impl Lexer {
+    pub fn new(file_content: String) -> Lexer {
+
+        Lexer {
+            file_content,
+        }
+    }
+
+    pub fn next_lexeme(&mut self) -> Option<Lexeme> {
+
+        None
+    }
+}
+
+#[cfg(test)]
+
+mod tests {
+
+    #[test]
+
+    fn test_symbols() {
+
+        todo!("test_symbols");
+    }
+}
