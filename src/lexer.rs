@@ -5,6 +5,9 @@ use std::str;
 
 #[derive(Debug, PartialEq)]
 pub enum Lexeme {
+    EOF,
+    INVALID,
+
     LET,
     MUT,
     FN,
@@ -31,23 +34,22 @@ pub enum Lexeme {
     BRACKET_OPEN,
     BRACKET_CLOSE,
     SEMI_COLON,
+    COLON,
     COMMA,
 
-    // I8,
-    // I16,
-    // I32,
-    // I64,
-    // U8,
-    // U16,
-    // U32,
-    // U64,
-    // CHAR,
-    // STRING,
+    I8,
+    I16,
+    I32,
+    I64,
+    U8,
+    U16,
+    U32,
+    U64,
+    CHAR,
+    STRING,
     // REFERENCE,
-
-    // UNSIGNED_INT_LITERAL,
-    INT_LITERAL(i64),
-    // FLOAT_LITERAL,
+    INT_LITERAL(i64), // -?[0-9]+
+    // FLOAT_LITERAL, -?[0-9]+.[0-9*]+
     CHAR_LITERAL,
     STRING_LITERAL,
 
@@ -63,35 +65,37 @@ pub enum Lexeme {
     MODULO_OP,
     MODULO_OP_ASSIGN,
 
-    // LOCICAL_AND_OP,
-    // LOGICAL_OR_OP,
-    // LOGICAL_NOT_OP,
-    //
-    // BINARY_AND_OP,
-    // BINARY_AND_OP_ASSIGN,
-    // BINARY_OR_OP,
-    // BINARY_OR_OP_ASSIGN,
-    // BINARY_XOR_OP,
-    // BINARY_XOR_OP_ASSIGN,
-    // BINARY_NOT_OP,
-    // BINARY_NOT_OP_ASSIGN,
-    //
-    // LEFT_SHIFT_OP,
-    // LEFT_SHIFT_OP_ASSIGN,
-    // RIGHT_SHIFT_OP,
-    // RIGHT_SHIFT_OP_ASSIGN,
-    // LEFT_ROT_OP,
-    // LEFT_ROT_OP_ASSIGN,
-    // RIGHT_ROT_OP,
-    // RIGHT_ROT_OP_ASSIGN,
-    //
-    // EQ_OP,
-    // NE_OP,
-    // LT_OP,
-    // LE_OP,
-    // GT_OP,
-    // GE_OP,
-    IDENTIFIER { identifier: Identifier },
+    RETURN_TYPE_OP,
+
+    LOGICAL_AND_OP,
+    LOGICAL_OR_OP,
+    LOGICAL_NOT_OP,
+
+    BINARY_AND_OP,
+    BINARY_AND_OP_ASSIGN,
+    BINARY_OR_OP,
+    BINARY_OR_OP_ASSIGN,
+    BINARY_XOR_OP,
+    BINARY_XOR_OP_ASSIGN,
+    BINARY_NOT_OP,
+    BINARY_NOT_OP_ASSIGN,
+
+    LEFT_SHIFT_OP,
+    LEFT_SHIFT_OP_ASSIGN,
+    RIGHT_SHIFT_OP,
+    RIGHT_SHIFT_OP_ASSIGN,
+    LEFT_ROT_OP,
+    LEFT_ROT_OP_ASSIGN,
+    RIGHT_ROT_OP,
+    RIGHT_ROT_OP_ASSIGN,
+    EQ_OP,
+    NE_OP,
+    LT_OP,
+    LE_OP,
+    GT_OP,
+    GE_OP,
+
+    IDENTIFIER(Identifier),
 }
 
 pub struct Lexer {
@@ -111,7 +115,7 @@ impl Lexer {
         }
     }
 
-    pub fn next_lexeme(&mut self) -> Option<Lexeme> {
+    pub fn next_lexeme(&mut self) -> Lexeme {
         self.skip_whitespace();
 
         let lexeme = match self.curr_char {
@@ -119,15 +123,25 @@ impl Lexer {
                 let word = self.read_word();
 
                 match word {
-                    "let" => Some(Lexeme::LET),
-                    "mut" => Some(Lexeme::MUT),
-                    "fn" => Some(Lexeme::FN),
-                    "return" => Some(Lexeme::RETURN),
-                    "true" => Some(Lexeme::TRUE),
-                    "false" => Some(Lexeme::FALSE),
+                    "let" => Lexeme::LET,
+                    "mut" => Lexeme::MUT,
+                    "fn" => Lexeme::FN,
+                    "return" => Lexeme::RETURN,
+                    "true" => Lexeme::TRUE,
+                    "false" => Lexeme::FALSE,
+                    "i8" => Lexeme::I8,
+                    "u8" => Lexeme::U8,
+                    "i16" => Lexeme::I16,
+                    "u16" => Lexeme::U16,
+                    "i32" => Lexeme::I32,
+                    "u32" => Lexeme::U32,
+                    "i64" => Lexeme::I64,
+                    "u64" => Lexeme::U64,
+                    "char" => Lexeme::CHAR,
+                    "string" => Lexeme::STRING,
                     _ => {
                         let identifier = Identifier::new(word);
-                        Some(Lexeme::IDENTIFIER { identifier })
+                        Lexeme::IDENTIFIER(identifier)
                     }
                 }
             }
@@ -135,26 +149,177 @@ impl Lexer {
             b'0'..=b'9' => {
                 let int_value = self.read_int_literal();
 
-                Some(Lexeme::INT_LITERAL(int_value))
+                Lexeme::INT_LITERAL(int_value)
             }
 
-            b'{' => Some(Lexeme::BRACE_OPEN),
-            b'}' => Some(Lexeme::BRACE_CLOSE),
-            b'(' => Some(Lexeme::PARENTHESES_OPEN),
-            b')' => Some(Lexeme::PARENTHESES_CLOSE),
-            b'[' => Some(Lexeme::BRACKET_OPEN),
-            b']' => Some(Lexeme::BRACKET_CLOSE),
-            b';' => Some(Lexeme::SEMI_COLON),
-            b',' => Some(Lexeme::COMMA),
+            b'{' => Lexeme::BRACE_OPEN,
+            b'}' => Lexeme::BRACE_CLOSE,
+            b'(' => Lexeme::PARENTHESES_OPEN,
+            b')' => Lexeme::PARENTHESES_CLOSE,
+            b'[' => Lexeme::BRACKET_OPEN,
+            b']' => Lexeme::BRACKET_CLOSE,
+            b';' => Lexeme::SEMI_COLON,
+            b':' => Lexeme::COLON,
+            b',' => Lexeme::COMMA,
 
-            b'=' => Some(Lexeme::ASSIGN_OP),
-            b'+' => Some(Lexeme::PLUS_OP),
-            b'-' => Some(Lexeme::MINUS_OP),
-            b'*' => Some(Lexeme::TIMES_OP),
-            b'/' => Some(Lexeme::DIVIDE_OP),
-            b'%' => Some(Lexeme::MODULO_OP),
-            0 => None,
-            _ => None,
+            b'=' => match self.peek_char() {
+                b'=' => {
+                    self.read_char();
+                    Lexeme::EQ_OP
+                }
+                _ => Lexeme::ASSIGN_OP,
+            },
+
+            b'+' => match self.peek_char() {
+                b'=' => {
+                    self.read_char();
+                    Lexeme::PLUS_OP_ASSIGN
+                }
+                _ => Lexeme::PLUS_OP,
+            },
+
+            b'-' => match self.peek_char() {
+                b'>' => {
+                    self.read_char();
+                    Lexeme::RETURN_TYPE_OP
+                }
+                b'=' => {
+                    self.read_char();
+                    Lexeme::MINUS_OP_ASSIGN
+                }
+                _ => Lexeme::MINUS_OP,
+            },
+
+            b'*' => match self.peek_char() {
+                b'=' => {
+                    self.read_char();
+                    Lexeme::TIMES_OP_ASSIGN
+                }
+                _ => Lexeme::TIMES_OP,
+            },
+
+            b'/' => match self.peek_char() {
+                b'=' => {
+                    self.read_char();
+                    Lexeme::DIVIDE_OP_ASSIGN
+                }
+                _ => Lexeme::DIVIDE_OP,
+            },
+
+            b'%' => match self.peek_char() {
+                b'=' => {
+                    self.read_char();
+                    Lexeme::MODULO_OP_ASSIGN
+                }
+                _ => Lexeme::MODULO_OP,
+            },
+
+            b'!' => match self.peek_char() {
+                b'=' => {
+                    self.read_char();
+                    Lexeme::NE_OP
+                }
+                _ => Lexeme::LOGICAL_NOT_OP,
+            },
+
+            b'&' => match self.peek_char() {
+                b'=' => {
+                    self.read_char();
+                    Lexeme::BINARY_AND_OP_ASSIGN
+                }
+                b'&' => {
+                    self.read_char();
+                    Lexeme::LOGICAL_AND_OP
+                }
+                _ => Lexeme::BINARY_AND_OP,
+            },
+
+            b'|' => match self.peek_char() {
+                b'=' => {
+                    self.read_char();
+                    Lexeme::BINARY_OR_OP_ASSIGN
+                }
+                b'|' => {
+                    self.read_char();
+                    Lexeme::LOGICAL_OR_OP
+                }
+                _ => Lexeme::BINARY_OR_OP,
+            },
+
+            b'^' => match self.peek_char() {
+                b'=' => {
+                    self.read_char();
+                    Lexeme::BINARY_XOR_OP_ASSIGN
+                }
+                _ => Lexeme::BINARY_XOR_OP,
+            },
+
+            b'~' => match self.peek_char() {
+                b'=' => {
+                    self.read_char();
+                    Lexeme::BINARY_NOT_OP_ASSIGN
+                }
+                _ => Lexeme::BINARY_NOT_OP,
+            },
+
+            b'<' => match self.peek_char() {
+                b'<' => {
+                    self.read_char();
+                    match self.peek_char() {
+                        b'<' => {
+                            self.read_char();
+                            match self.peek_char() {
+                                b'=' => {
+                                    self.read_char();
+                                    Lexeme::LEFT_ROT_OP_ASSIGN
+                                }
+                                _ => Lexeme::LEFT_ROT_OP,
+                            }
+                        }
+                        b'=' => {
+                            self.read_char();
+                            Lexeme::LEFT_SHIFT_OP_ASSIGN
+                        }
+                        _ => Lexeme::LEFT_SHIFT_OP,
+                    }
+                }
+                b'=' => {
+                    self.read_char();
+                    Lexeme::LE_OP
+                }
+                _ => Lexeme::LT_OP,
+            },
+
+            b'>' => match self.peek_char() {
+                b'>' => {
+                    self.read_char();
+                    match self.peek_char() {
+                        b'>' => {
+                            self.read_char();
+                            match self.peek_char() {
+                                b'=' => {
+                                    self.read_char();
+                                    Lexeme::RIGHT_ROT_OP_ASSIGN
+                                }
+                                _ => Lexeme::RIGHT_ROT_OP,
+                            }
+                        }
+                        b'=' => {
+                            self.read_char();
+                            Lexeme::RIGHT_SHIFT_OP_ASSIGN
+                        }
+                        _ => Lexeme::RIGHT_SHIFT_OP,
+                    }
+                }
+                b'=' => {
+                    self.read_char();
+                    Lexeme::GE_OP
+                }
+                _ => Lexeme::GT_OP,
+            },
+
+            0 => Lexeme::EOF,
+            _ => Lexeme::INVALID,
         };
 
         self.read_char();
@@ -228,30 +393,30 @@ mod tests {
 
         let mut lexer = Lexer::new(input);
 
-        assert_eq!(lexer.next_lexeme().unwrap(), Lexeme::PARENTHESES_OPEN);
-        assert_eq!(lexer.next_lexeme().unwrap(), Lexeme::BRACE_OPEN);
-        assert_eq!(lexer.next_lexeme().unwrap(), Lexeme::BRACKET_OPEN);
-        assert_eq!(lexer.next_lexeme().unwrap(), Lexeme::BRACKET_CLOSE);
-        assert_eq!(lexer.next_lexeme().unwrap(), Lexeme::BRACE_CLOSE);
-        assert_eq!(lexer.next_lexeme().unwrap(), Lexeme::PARENTHESES_CLOSE);
-        assert_eq!(lexer.next_lexeme().unwrap(), Lexeme::SEMI_COLON);
-        assert_eq!(lexer.next_lexeme().unwrap(), Lexeme::COMMA);
-        assert_eq!(lexer.next_lexeme(), None);
+        assert_eq!(lexer.next_lexeme(), Lexeme::PARENTHESES_OPEN);
+        assert_eq!(lexer.next_lexeme(), Lexeme::BRACE_OPEN);
+        assert_eq!(lexer.next_lexeme(), Lexeme::BRACKET_OPEN);
+        assert_eq!(lexer.next_lexeme(), Lexeme::BRACKET_CLOSE);
+        assert_eq!(lexer.next_lexeme(), Lexeme::BRACE_CLOSE);
+        assert_eq!(lexer.next_lexeme(), Lexeme::PARENTHESES_CLOSE);
+        assert_eq!(lexer.next_lexeme(), Lexeme::SEMI_COLON);
+        assert_eq!(lexer.next_lexeme(), Lexeme::COMMA);
+        assert_eq!(lexer.next_lexeme(), Lexeme::EOF);
     }
 
     #[test]
     fn test_lexer_operators() {
-        let input = "+-=/*%";
+        let input = "=+-/*%";
 
         let mut lexer = Lexer::new(input);
 
-        assert_eq!(lexer.next_lexeme().unwrap(), Lexeme::PLUS_OP);
-        assert_eq!(lexer.next_lexeme().unwrap(), Lexeme::MINUS_OP);
-        assert_eq!(lexer.next_lexeme().unwrap(), Lexeme::ASSIGN_OP);
-        assert_eq!(lexer.next_lexeme().unwrap(), Lexeme::DIVIDE_OP);
-        assert_eq!(lexer.next_lexeme().unwrap(), Lexeme::TIMES_OP);
-        assert_eq!(lexer.next_lexeme().unwrap(), Lexeme::MODULO_OP);
-        assert_eq!(lexer.next_lexeme(), None);
+        assert_eq!(lexer.next_lexeme(), Lexeme::ASSIGN_OP);
+        assert_eq!(lexer.next_lexeme(), Lexeme::PLUS_OP);
+        assert_eq!(lexer.next_lexeme(), Lexeme::MINUS_OP);
+        assert_eq!(lexer.next_lexeme(), Lexeme::DIVIDE_OP);
+        assert_eq!(lexer.next_lexeme(), Lexeme::TIMES_OP);
+        assert_eq!(lexer.next_lexeme(), Lexeme::MODULO_OP);
+        assert_eq!(lexer.next_lexeme(), Lexeme::EOF);
     }
 
     #[test]
@@ -262,29 +427,23 @@ mod tests {
 
         let foo_identifier = Identifier::new("foo");
 
-        assert_eq!(lexer.next_lexeme().unwrap(), Lexeme::LET);
-        assert_eq!(lexer.next_lexeme().unwrap(), Lexeme::MUT);
-        assert_eq!(lexer.next_lexeme().unwrap(), Lexeme::FN);
-        assert_eq!(lexer.next_lexeme().unwrap(), Lexeme::RETURN);
-        assert_eq!(lexer.next_lexeme().unwrap(), Lexeme::TRUE);
-        assert_eq!(lexer.next_lexeme().unwrap(), Lexeme::FALSE);
-        assert_eq!(
-            lexer.next_lexeme().unwrap(),
-            Lexeme::IDENTIFIER {
-                identifier: foo_identifier
-            }
-        );
-        assert_eq!(lexer.next_lexeme(), None);
+        assert_eq!(lexer.next_lexeme(), Lexeme::LET);
+        assert_eq!(lexer.next_lexeme(), Lexeme::MUT);
+        assert_eq!(lexer.next_lexeme(), Lexeme::FN);
+        assert_eq!(lexer.next_lexeme(), Lexeme::RETURN);
+        assert_eq!(lexer.next_lexeme(), Lexeme::TRUE);
+        assert_eq!(lexer.next_lexeme(), Lexeme::FALSE);
+        assert_eq!(lexer.next_lexeme(), Lexeme::IDENTIFIER(foo_identifier));
+        assert_eq!(lexer.next_lexeme(), Lexeme::EOF);
     }
 
     #[test]
     fn test_lexer_realistic_input() {
-        let input = r#"fn main() {
+        let input = r#"fn main() -> u8 {
             let a = 5;
-            let b = 3;
-            let c = a + b;
+            let b : u8 = a + 3;
 
-            return (c-8);
+            return (b-8);
         }"#;
 
         let mut lexer = Lexer::new(input);
@@ -292,73 +451,51 @@ mod tests {
         let main_identifier = Identifier::new("main");
         let a_identifier = Identifier::new("a");
         let b_identifier = Identifier::new("b");
-        let c_identifier = Identifier::new("c");
 
-        assert_eq!(lexer.next_lexeme().unwrap(), Lexeme::FN);
+        assert_eq!(lexer.next_lexeme(), Lexeme::FN);
         assert_eq!(
-            lexer.next_lexeme().unwrap(),
-            Lexeme::IDENTIFIER {
-                identifier: main_identifier.clone()
-            }
+            lexer.next_lexeme(),
+            Lexeme::IDENTIFIER(main_identifier.clone())
         );
-        assert_eq!(lexer.next_lexeme().unwrap(), Lexeme::PARENTHESES_OPEN);
-        assert_eq!(lexer.next_lexeme().unwrap(), Lexeme::PARENTHESES_CLOSE);
-        assert_eq!(lexer.next_lexeme().unwrap(), Lexeme::BRACE_OPEN);
-        assert_eq!(lexer.next_lexeme().unwrap(), Lexeme::LET);
+        assert_eq!(lexer.next_lexeme(), Lexeme::PARENTHESES_OPEN);
+        assert_eq!(lexer.next_lexeme(), Lexeme::PARENTHESES_CLOSE);
+        assert_eq!(lexer.next_lexeme(), Lexeme::RETURN_TYPE_OP);
+        assert_eq!(lexer.next_lexeme(), Lexeme::U8);
+        assert_eq!(lexer.next_lexeme(), Lexeme::BRACE_OPEN);
+        assert_eq!(lexer.next_lexeme(), Lexeme::LET);
         assert_eq!(
-            lexer.next_lexeme().unwrap(),
-            Lexeme::IDENTIFIER {
-                identifier: a_identifier.clone()
-            }
+            lexer.next_lexeme(),
+            Lexeme::IDENTIFIER(a_identifier.clone())
         );
-        assert_eq!(lexer.next_lexeme().unwrap(), Lexeme::ASSIGN_OP);
-        assert_eq!(lexer.next_lexeme().unwrap(), Lexeme::INT_LITERAL(5));
-        assert_eq!(lexer.next_lexeme().unwrap(), Lexeme::SEMI_COLON);
-        assert_eq!(lexer.next_lexeme().unwrap(), Lexeme::LET);
+        assert_eq!(lexer.next_lexeme(), Lexeme::ASSIGN_OP);
+        assert_eq!(lexer.next_lexeme(), Lexeme::INT_LITERAL(5));
+        assert_eq!(lexer.next_lexeme(), Lexeme::SEMI_COLON);
+        assert_eq!(lexer.next_lexeme(), Lexeme::LET);
         assert_eq!(
-            lexer.next_lexeme().unwrap(),
-            Lexeme::IDENTIFIER {
-                identifier: b_identifier.clone()
-            }
+            lexer.next_lexeme(),
+            Lexeme::IDENTIFIER(b_identifier.clone())
         );
-        assert_eq!(lexer.next_lexeme().unwrap(), Lexeme::ASSIGN_OP);
-        assert_eq!(lexer.next_lexeme().unwrap(), Lexeme::INT_LITERAL(3));
-        assert_eq!(lexer.next_lexeme().unwrap(), Lexeme::SEMI_COLON);
-        assert_eq!(lexer.next_lexeme().unwrap(), Lexeme::LET);
+        assert_eq!(lexer.next_lexeme(), Lexeme::COLON);
+        assert_eq!(lexer.next_lexeme(), Lexeme::U8);
+        assert_eq!(lexer.next_lexeme(), Lexeme::ASSIGN_OP);
         assert_eq!(
-            lexer.next_lexeme().unwrap(),
-            Lexeme::IDENTIFIER {
-                identifier: c_identifier.clone()
-            }
+            lexer.next_lexeme(),
+            Lexeme::IDENTIFIER(a_identifier.clone())
         );
-        assert_eq!(lexer.next_lexeme().unwrap(), Lexeme::ASSIGN_OP);
+        assert_eq!(lexer.next_lexeme(), Lexeme::PLUS_OP);
+        assert_eq!(lexer.next_lexeme(), Lexeme::INT_LITERAL(3));
+        assert_eq!(lexer.next_lexeme(), Lexeme::SEMI_COLON);
+        assert_eq!(lexer.next_lexeme(), Lexeme::RETURN);
+        assert_eq!(lexer.next_lexeme(), Lexeme::PARENTHESES_OPEN);
         assert_eq!(
-            lexer.next_lexeme().unwrap(),
-            Lexeme::IDENTIFIER {
-                identifier: a_identifier.clone()
-            }
+            lexer.next_lexeme(),
+            Lexeme::IDENTIFIER(b_identifier.clone())
         );
-        assert_eq!(lexer.next_lexeme().unwrap(), Lexeme::PLUS_OP);
-        assert_eq!(
-            lexer.next_lexeme().unwrap(),
-            Lexeme::IDENTIFIER {
-                identifier: b_identifier.clone()
-            }
-        );
-        assert_eq!(lexer.next_lexeme().unwrap(), Lexeme::SEMI_COLON);
-        assert_eq!(lexer.next_lexeme().unwrap(), Lexeme::RETURN);
-        assert_eq!(lexer.next_lexeme().unwrap(), Lexeme::PARENTHESES_OPEN);
-        assert_eq!(
-            lexer.next_lexeme().unwrap(),
-            Lexeme::IDENTIFIER {
-                identifier: c_identifier.clone()
-            }
-        );
-        assert_eq!(lexer.next_lexeme().unwrap(), Lexeme::MINUS_OP);
-        assert_eq!(lexer.next_lexeme().unwrap(), Lexeme::INT_LITERAL(8));
-        assert_eq!(lexer.next_lexeme().unwrap(), Lexeme::PARENTHESES_CLOSE);
-        assert_eq!(lexer.next_lexeme().unwrap(), Lexeme::SEMI_COLON);
-        assert_eq!(lexer.next_lexeme().unwrap(), Lexeme::BRACE_CLOSE);
-        assert_eq!(lexer.next_lexeme(), None);
+        assert_eq!(lexer.next_lexeme(), Lexeme::MINUS_OP);
+        assert_eq!(lexer.next_lexeme(), Lexeme::INT_LITERAL(8));
+        assert_eq!(lexer.next_lexeme(), Lexeme::PARENTHESES_CLOSE);
+        assert_eq!(lexer.next_lexeme(), Lexeme::SEMI_COLON);
+        assert_eq!(lexer.next_lexeme(), Lexeme::BRACE_CLOSE);
+        assert_eq!(lexer.next_lexeme(), Lexeme::EOF);
     }
 }
