@@ -1,9 +1,11 @@
 #![allow(non_camel_case_types)]
 
-use crate::symbol_table::Identifier;
 use std::str;
 
+use crate::symbol_table::Identifier;
+
 #[derive(Debug, PartialEq)]
+
 pub enum Lexeme {
     EOF,
     INVALID,
@@ -99,27 +101,30 @@ pub enum Lexeme {
 }
 
 pub struct Lexer {
-    input: Vec<u8>,
-    pos: usize,
-    read_pos: usize,
+    input:     Vec<u8>,
+    pos:       usize,
+    read_pos:  usize,
     curr_char: u8,
 }
 
 impl Lexer {
     pub fn new(input: &str) -> Lexer {
+
         Lexer {
-            input: Vec::from(input.as_bytes()),
-            pos: 0,
-            read_pos: 1,
+            input:     Vec::from(input.as_bytes()),
+            pos:       0,
+            read_pos:  1,
             curr_char: input.as_bytes()[0],
         }
     }
 
     pub fn next_lexeme(&mut self) -> Lexeme {
+
         self.skip_whitespace();
 
         let lexeme = match self.curr_char {
             b'a'..=b'z' | b'A'..=b'Z' | b'_' => {
+
                 let word = self.read_word();
 
                 match word {
@@ -140,13 +145,16 @@ impl Lexer {
                     "char" => Lexeme::CHAR,
                     "string" => Lexeme::STRING,
                     _ => {
+
                         let identifier = Identifier::new(word);
+
                         Lexeme::IDENTIFIER(identifier)
                     }
                 }
             }
 
             b'0'..=b'9' => {
+
                 let int_value = self.read_int_literal();
 
                 Lexeme::INT_LITERAL(int_value)
@@ -164,7 +172,9 @@ impl Lexer {
 
             b'=' => match self.peek_char() {
                 b'=' => {
+
                     self.read_char();
+
                     Lexeme::EQ_OP
                 }
                 _ => Lexeme::ASSIGN_OP,
@@ -172,7 +182,9 @@ impl Lexer {
 
             b'+' => match self.peek_char() {
                 b'=' => {
+
                     self.read_char();
+
                     Lexeme::PLUS_OP_ASSIGN
                 }
                 _ => Lexeme::PLUS_OP,
@@ -180,11 +192,15 @@ impl Lexer {
 
             b'-' => match self.peek_char() {
                 b'>' => {
+
                     self.read_char();
+
                     Lexeme::RETURN_TYPE_OP
                 }
                 b'=' => {
+
                     self.read_char();
+
                     Lexeme::MINUS_OP_ASSIGN
                 }
                 _ => Lexeme::MINUS_OP,
@@ -192,7 +208,9 @@ impl Lexer {
 
             b'*' => match self.peek_char() {
                 b'=' => {
+
                     self.read_char();
+
                     Lexeme::TIMES_OP_ASSIGN
                 }
                 _ => Lexeme::TIMES_OP,
@@ -200,7 +218,9 @@ impl Lexer {
 
             b'/' => match self.peek_char() {
                 b'=' => {
+
                     self.read_char();
+
                     Lexeme::DIVIDE_OP_ASSIGN
                 }
                 _ => Lexeme::DIVIDE_OP,
@@ -208,7 +228,9 @@ impl Lexer {
 
             b'%' => match self.peek_char() {
                 b'=' => {
+
                     self.read_char();
+
                     Lexeme::MODULO_OP_ASSIGN
                 }
                 _ => Lexeme::MODULO_OP,
@@ -216,7 +238,9 @@ impl Lexer {
 
             b'!' => match self.peek_char() {
                 b'=' => {
+
                     self.read_char();
+
                     Lexeme::NE_OP
                 }
                 _ => Lexeme::LOGICAL_NOT_OP,
@@ -224,11 +248,15 @@ impl Lexer {
 
             b'&' => match self.peek_char() {
                 b'=' => {
+
                     self.read_char();
+
                     Lexeme::BINARY_AND_OP_ASSIGN
                 }
                 b'&' => {
+
                     self.read_char();
+
                     Lexeme::LOGICAL_AND_OP
                 }
                 _ => Lexeme::BINARY_AND_OP,
@@ -236,11 +264,15 @@ impl Lexer {
 
             b'|' => match self.peek_char() {
                 b'=' => {
+
                     self.read_char();
+
                     Lexeme::BINARY_OR_OP_ASSIGN
                 }
                 b'|' => {
+
                     self.read_char();
+
                     Lexeme::LOGICAL_OR_OP
                 }
                 _ => Lexeme::BINARY_OR_OP,
@@ -248,7 +280,9 @@ impl Lexer {
 
             b'^' => match self.peek_char() {
                 b'=' => {
+
                     self.read_char();
+
                     Lexeme::BINARY_XOR_OP_ASSIGN
                 }
                 _ => Lexeme::BINARY_XOR_OP,
@@ -256,7 +290,9 @@ impl Lexer {
 
             b'~' => match self.peek_char() {
                 b'=' => {
+
                     self.read_char();
+
                     Lexeme::BINARY_NOT_OP_ASSIGN
                 }
                 _ => Lexeme::BINARY_NOT_OP,
@@ -264,27 +300,37 @@ impl Lexer {
 
             b'<' => match self.peek_char() {
                 b'<' => {
+
                     self.read_char();
+
                     match self.peek_char() {
                         b'<' => {
+
                             self.read_char();
+
                             match self.peek_char() {
                                 b'=' => {
+
                                     self.read_char();
+
                                     Lexeme::LEFT_ROT_OP_ASSIGN
                                 }
                                 _ => Lexeme::LEFT_ROT_OP,
                             }
                         }
                         b'=' => {
+
                             self.read_char();
+
                             Lexeme::LEFT_SHIFT_OP_ASSIGN
                         }
                         _ => Lexeme::LEFT_SHIFT_OP,
                     }
                 }
                 b'=' => {
+
                     self.read_char();
+
                     Lexeme::LE_OP
                 }
                 _ => Lexeme::LT_OP,
@@ -292,27 +338,37 @@ impl Lexer {
 
             b'>' => match self.peek_char() {
                 b'>' => {
+
                     self.read_char();
+
                     match self.peek_char() {
                         b'>' => {
+
                             self.read_char();
+
                             match self.peek_char() {
                                 b'=' => {
+
                                     self.read_char();
+
                                     Lexeme::RIGHT_ROT_OP_ASSIGN
                                 }
                                 _ => Lexeme::RIGHT_ROT_OP,
                             }
                         }
                         b'=' => {
+
                             self.read_char();
+
                             Lexeme::RIGHT_SHIFT_OP_ASSIGN
                         }
                         _ => Lexeme::RIGHT_SHIFT_OP,
                     }
                 }
                 b'=' => {
+
                     self.read_char();
+
                     Lexeme::GE_OP
                 }
                 _ => Lexeme::GT_OP,
@@ -328,9 +384,11 @@ impl Lexer {
     }
 
     fn read_word(&mut self) -> &str {
+
         let start = self.pos;
 
         loop {
+
             match self.peek_char() {
                 b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9' | b'_' => self.read_char(),
                 _ => break,
@@ -343,9 +401,11 @@ impl Lexer {
     }
 
     fn read_int_literal(&mut self) -> i64 {
+
         let start = self.pos;
 
         while self.peek_char().is_ascii_digit() {
+
             self.read_char();
         }
 
@@ -357,70 +417,94 @@ impl Lexer {
     }
 
     fn read_char(&mut self) {
-        self.curr_char = if self.read_pos >= self.input.len() {
-            0
-        } else {
-            self.input[self.read_pos]
-        };
+
+        self.curr_char = if self.read_pos >= self.input.len() { 0 } else { self.input[self.read_pos] };
 
         self.pos = self.read_pos;
+
         self.read_pos += 1;
     }
 
     fn peek_char(&self) -> u8 {
+
         if self.read_pos >= self.input.len() {
+
             0
         } else {
+
             self.input[self.read_pos]
         }
     }
 
     fn skip_whitespace(&mut self) {
+
         while self.curr_char.is_ascii_whitespace() {
+
             self.read_char();
         }
     }
 }
 
 #[cfg(test)]
+
 mod tests {
 
     use super::*;
 
     #[test]
+
     fn test_lexer_symbols() {
+
         let input = "({[]});,";
 
         let mut lexer = Lexer::new(input);
 
         assert_eq!(lexer.next_lexeme(), Lexeme::PARENTHESES_OPEN);
+
         assert_eq!(lexer.next_lexeme(), Lexeme::BRACE_OPEN);
+
         assert_eq!(lexer.next_lexeme(), Lexeme::BRACKET_OPEN);
+
         assert_eq!(lexer.next_lexeme(), Lexeme::BRACKET_CLOSE);
+
         assert_eq!(lexer.next_lexeme(), Lexeme::BRACE_CLOSE);
+
         assert_eq!(lexer.next_lexeme(), Lexeme::PARENTHESES_CLOSE);
+
         assert_eq!(lexer.next_lexeme(), Lexeme::SEMI_COLON);
+
         assert_eq!(lexer.next_lexeme(), Lexeme::COMMA);
+
         assert_eq!(lexer.next_lexeme(), Lexeme::EOF);
     }
 
     #[test]
+
     fn test_lexer_operators() {
+
         let input = "=+-/*%";
 
         let mut lexer = Lexer::new(input);
 
         assert_eq!(lexer.next_lexeme(), Lexeme::ASSIGN_OP);
+
         assert_eq!(lexer.next_lexeme(), Lexeme::PLUS_OP);
+
         assert_eq!(lexer.next_lexeme(), Lexeme::MINUS_OP);
+
         assert_eq!(lexer.next_lexeme(), Lexeme::DIVIDE_OP);
+
         assert_eq!(lexer.next_lexeme(), Lexeme::TIMES_OP);
+
         assert_eq!(lexer.next_lexeme(), Lexeme::MODULO_OP);
+
         assert_eq!(lexer.next_lexeme(), Lexeme::EOF);
     }
 
     #[test]
+
     fn test_lexer_keywords() {
+
         let input = "let mut fn return true false foo";
 
         let mut lexer = Lexer::new(input);
@@ -428,17 +512,26 @@ mod tests {
         let foo_identifier = Identifier::new("foo");
 
         assert_eq!(lexer.next_lexeme(), Lexeme::LET);
+
         assert_eq!(lexer.next_lexeme(), Lexeme::MUT);
+
         assert_eq!(lexer.next_lexeme(), Lexeme::FN);
+
         assert_eq!(lexer.next_lexeme(), Lexeme::RETURN);
+
         assert_eq!(lexer.next_lexeme(), Lexeme::TRUE);
+
         assert_eq!(lexer.next_lexeme(), Lexeme::FALSE);
+
         assert_eq!(lexer.next_lexeme(), Lexeme::IDENTIFIER(foo_identifier));
+
         assert_eq!(lexer.next_lexeme(), Lexeme::EOF);
     }
 
     #[test]
+
     fn test_lexer_realistic_input() {
+
         let input = r#"fn main() -> u8 {
             let a = 5;
             let b : u8 = a + 3;
@@ -449,53 +542,69 @@ mod tests {
         let mut lexer = Lexer::new(input);
 
         let main_identifier = Identifier::new("main");
+
         let a_identifier = Identifier::new("a");
+
         let b_identifier = Identifier::new("b");
 
         assert_eq!(lexer.next_lexeme(), Lexeme::FN);
-        assert_eq!(
-            lexer.next_lexeme(),
-            Lexeme::IDENTIFIER(main_identifier.clone())
-        );
+
+        assert_eq!(lexer.next_lexeme(), Lexeme::IDENTIFIER(main_identifier.clone()));
+
         assert_eq!(lexer.next_lexeme(), Lexeme::PARENTHESES_OPEN);
+
         assert_eq!(lexer.next_lexeme(), Lexeme::PARENTHESES_CLOSE);
+
         assert_eq!(lexer.next_lexeme(), Lexeme::RETURN_TYPE_OP);
+
         assert_eq!(lexer.next_lexeme(), Lexeme::U8);
+
         assert_eq!(lexer.next_lexeme(), Lexeme::BRACE_OPEN);
+
         assert_eq!(lexer.next_lexeme(), Lexeme::LET);
-        assert_eq!(
-            lexer.next_lexeme(),
-            Lexeme::IDENTIFIER(a_identifier.clone())
-        );
+
+        assert_eq!(lexer.next_lexeme(), Lexeme::IDENTIFIER(a_identifier.clone()));
+
         assert_eq!(lexer.next_lexeme(), Lexeme::ASSIGN_OP);
+
         assert_eq!(lexer.next_lexeme(), Lexeme::INT_LITERAL(5));
+
         assert_eq!(lexer.next_lexeme(), Lexeme::SEMI_COLON);
+
         assert_eq!(lexer.next_lexeme(), Lexeme::LET);
-        assert_eq!(
-            lexer.next_lexeme(),
-            Lexeme::IDENTIFIER(b_identifier.clone())
-        );
+
+        assert_eq!(lexer.next_lexeme(), Lexeme::IDENTIFIER(b_identifier.clone()));
+
         assert_eq!(lexer.next_lexeme(), Lexeme::COLON);
+
         assert_eq!(lexer.next_lexeme(), Lexeme::U8);
+
         assert_eq!(lexer.next_lexeme(), Lexeme::ASSIGN_OP);
-        assert_eq!(
-            lexer.next_lexeme(),
-            Lexeme::IDENTIFIER(a_identifier.clone())
-        );
+
+        assert_eq!(lexer.next_lexeme(), Lexeme::IDENTIFIER(a_identifier.clone()));
+
         assert_eq!(lexer.next_lexeme(), Lexeme::PLUS_OP);
+
         assert_eq!(lexer.next_lexeme(), Lexeme::INT_LITERAL(3));
+
         assert_eq!(lexer.next_lexeme(), Lexeme::SEMI_COLON);
+
         assert_eq!(lexer.next_lexeme(), Lexeme::RETURN);
+
         assert_eq!(lexer.next_lexeme(), Lexeme::PARENTHESES_OPEN);
-        assert_eq!(
-            lexer.next_lexeme(),
-            Lexeme::IDENTIFIER(b_identifier.clone())
-        );
+
+        assert_eq!(lexer.next_lexeme(), Lexeme::IDENTIFIER(b_identifier.clone()));
+
         assert_eq!(lexer.next_lexeme(), Lexeme::MINUS_OP);
+
         assert_eq!(lexer.next_lexeme(), Lexeme::INT_LITERAL(8));
+
         assert_eq!(lexer.next_lexeme(), Lexeme::PARENTHESES_CLOSE);
+
         assert_eq!(lexer.next_lexeme(), Lexeme::SEMI_COLON);
+
         assert_eq!(lexer.next_lexeme(), Lexeme::BRACE_CLOSE);
+
         assert_eq!(lexer.next_lexeme(), Lexeme::EOF);
     }
 }
