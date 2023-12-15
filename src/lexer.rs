@@ -53,7 +53,7 @@ pub enum Lexeme {
     INT_LITERAL(i64), // -?[0-9]+
     // FLOAT_LITERAL, -?[0-9]+.[0-9*]+
     CHAR_LITERAL,
-    STRING_LITERAL,
+    STRING_LITERAL(String),
 
     ASSIGN_OP,
     PLUS_OP,
@@ -108,7 +108,7 @@ pub struct Lexer {
 }
 
 impl Lexer {
-    pub fn new(input: &str) -> Lexer {
+    pub fn new(input: String) -> Lexer {
 
         Lexer {
             input:     Vec::from(input.as_bytes()),
@@ -116,6 +116,25 @@ impl Lexer {
             read_pos:  1,
             curr_char: input.as_bytes()[0],
         }
+    }
+
+    pub fn lex(&mut self) -> Vec<Lexeme> {
+
+        let mut output = Vec::new();
+
+        loop {
+
+            let lexeme = self.next_lexeme();
+
+            if lexeme == Lexeme::EOF {
+
+                break;
+            }
+
+            output.push(lexeme);
+        }
+
+        return output;
     }
 
     pub fn next_lexeme(&mut self) -> Lexeme {
@@ -169,6 +188,13 @@ impl Lexer {
             b';' => Lexeme::SEMI_COLON,
             b':' => Lexeme::COLON,
             b',' => Lexeme::COMMA,
+
+            b'"' => {
+
+                let str_literal_value = self.read_str_literal();
+
+                Lexeme::STRING_LITERAL(String::from(str_literal_value))
+            }
 
             b'=' => match self.peek_char() {
                 b'=' => {
@@ -400,6 +426,26 @@ impl Lexer {
         str::from_utf8(&self.input[start..=end]).unwrap()
     }
 
+    fn read_str_literal(&mut self) -> &str {
+
+        let start = self.pos;
+
+        loop {
+
+            match self.peek_char() {
+                b'\\' => self.read_char(),
+                b'"' => break,
+                _ => self.read_char(),
+            }
+        }
+
+        let end = self.pos;
+
+        self.read_char();
+
+        str::from_utf8(&self.input[start..=end]).unwrap()
+    }
+
     fn read_int_literal(&mut self) -> i64 {
 
         let start = self.pos;
@@ -455,7 +501,7 @@ mod tests {
 
     fn test_lexer_symbols() {
 
-        let input = "({[]});,";
+        let input = String::from("({[]});,");
 
         let mut lexer = Lexer::new(input);
 
@@ -482,7 +528,7 @@ mod tests {
 
     fn test_lexer_operators() {
 
-        let input = "=+-/*%";
+        let input = String::from("=+-/*%");
 
         let mut lexer = Lexer::new(input);
 
@@ -505,7 +551,7 @@ mod tests {
 
     fn test_lexer_keywords() {
 
-        let input = "let mut fn return true false foo";
+        let input = String::from("let mut fn return true false foo");
 
         let mut lexer = Lexer::new(input);
 
@@ -532,12 +578,14 @@ mod tests {
 
     fn test_lexer_realistic_input() {
 
-        let input = r#"fn main() -> u8 {
+        let input = String::from(
+            r#"fn main() -> u8 {
             let a = 5;
             let b : u8 = a + 3;
 
             return (b-8);
-        }"#;
+        }"#,
+        );
 
         let mut lexer = Lexer::new(input);
 
